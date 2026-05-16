@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}История уведомлений — YClients Bot Admin{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem">📬 История уведомлений</h1>
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Клиент</th><th>Канал</th><th>Тип</th>
+                <th>Статус</th><th>Запись</th><th>Время</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.client_id }}</td>
+                <td>{{ item.channel }}</td>
+                <td>{{ item.notification_type }}</td>
+                <td>
+                    {% if item.status in ('sent', 'delivered') %}
+                        <span class="badge badge-success">{{ item.status }}</span>
+                    {% elif item.status == 'failed' %}
+                        <span class="badge badge-danger">{{ item.status }}</span>
+                    {% else %}
+                        <span class="badge badge-warning">{{ item.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.appointment_id or '—' }}</td>
+                <td>{{ item.created_at[:16] if item.created_at else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;color:#999">Нет записей</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

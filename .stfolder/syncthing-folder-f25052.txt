@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: vdntu-bfzwr
+created: 2026-05-16T23:37:42+03:00

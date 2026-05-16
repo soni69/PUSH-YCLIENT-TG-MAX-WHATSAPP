@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Шаблоны — YClients Bot Admin{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem">📝 Шаблоны сообщений</h1>
+<div class="card">
+    <p style="margin-bottom:1rem;color:#666">
+        Доступные переменные: <code>{{client_name}}</code>, <code>{{master_name}}</code>,
+        <code>{{service_name}}</code>, <code>{{appointment_date}}</code>,
+        <code>{{appointment_time}}</code>, <code>{{salon_address}}</code>,
+        <code>{{salon_phone}}</code>, <code>{{salon_name}}</code>
+    </p>
+    <table>
+        <thead>
+            <tr><th>Тип</th><th>Канал</th><th>Язык</th><th>Активен</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+            {% for tmpl in templates %}
+            <tr>
+                <td>{{ tmpl.notification_type }}</td>
+                <td>{{ tmpl.channel }}</td>
+                <td>{{ tmpl.language }}</td>
+                <td>
+                    {% if tmpl.is_active %}
+                        <span class="badge badge-success">✓</span>
+                    {% else %}
+                        <span class="badge badge-danger">✗</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/admin/templates/{{ tmpl.id }}/edit" class="btn btn-primary" style="font-size:0.8rem;padding:0.3rem 0.6rem">Редактировать</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

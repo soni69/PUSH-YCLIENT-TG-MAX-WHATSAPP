@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Дашборд — YClients Bot Admin{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem">📊 Дашборд</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="value">{{ stats.total_sent_today }}</div>
+        <div class="label">Отправлено сегодня</div>
+    </div>
+    <div class="stat-card">
+        <div class="value" style="color:#e74c3c">{{ stats.total_failed_today }}</div>
+        <div class="label">Ошибок сегодня</div>
+    </div>
+    <div class="stat-card">
+        <div class="value" style="color:#27ae60">{{ stats.success_rate }}%</div>
+        <div class="label">Успешная доставка</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem">
+    <h2>По каналам (сегодня)</h2>
+    <table>
+        <thead>
+            <tr><th>Канал</th><th>Отправлено</th><th>Ошибок</th><th>Всего</th></tr>
+        </thead>
+        <tbody>
+            {% for channel, data in stats.by_channel.items() %}
+            <tr>
+                <td>
+                    {% if channel == 'telegram' %}🔵 Telegram
+                    {% elif channel == 'whatsapp' %}🟢 WhatsApp
+                    {% elif channel == 'max' %}🟣 MAX
+                    {% else %}{{ channel }}{% endif %}
+                </td>
+                <td><span class="badge badge-success">{{ data.sent }}</span></td>
+                <td><span class="badge badge-danger">{{ data.failed }}</span></td>
+                <td>{{ data.total }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center;color:#999">Нет данных за сегодня</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

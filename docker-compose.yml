@@ -1,0 +1,123 @@
+version: "3.9"
+
+# ============================================================
+#  docker-compose.yml — yclients-notification-bot
+#  Services: app, celery_worker, celery_beat, postgres, redis
+# ============================================================
+
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+    target: production
+  env_file:
+    - .env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+  networks:
+    - bot_network
+
+services:
+
+  # ── FastAPI application ─────────────────────────────────────────────────────
+  app:
+    <<: *app-common
+    container_name: yclients_bot_app
+    ports:
+      - "8000:8000"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 1
+      --log-config /dev/null
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Celery worker (task execution) ─────────────────────────────────────────
+  celery_worker:
+    <<: *app-common
+    container_name: yclients_bot_celery_worker
+    # Skip migrations — app container handles them
+    entrypoint: []
+    command: >
+      celery -A app.tasks.celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=notifications,default
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks.celery_app", "inspect", "ping"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # ── Celery beat (periodic task scheduler) ──────────────────────────────────
+  celery_beat:
+    <<: *app-common
+    container_name: yclients_bot_celery_beat
+    entrypoint: []
+    command: >
+      celery -A app.tasks.celery_app beat
+      --loglevel=info
+      --scheduler celery.beat:PersistentScheduler
+      --schedule /tmp/celerybeat-schedule
+
+  # ── PostgreSQL 14 ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:14-alpine
+    container_name: yclients_bot_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-yclients_bot}
+      POSTGRES_USER: ${POSTGRES_USER:-botuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-botpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-botuser} -d ${POSTGRES_DB:-yclients_bot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - bot_network
+
+  # ── Redis 7 ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: yclients_bot_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - bot_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bot_network:
+    driver: bridge
